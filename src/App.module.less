@@ -34,5 +34,18 @@
   }
 }
 
-.play {
+.seek {
+  align-self: stretch;
+  height: 20px;
+  border: 1px solid #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+
+  .progress {
+    pointer-events: none;
+    height: 15px;
+    background-color: green;
+  }
 }

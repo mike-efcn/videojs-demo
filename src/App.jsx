@@ -34,6 +34,8 @@ const MimetypesKind = {
 const App = () => {
   const [url, setUrl] = useState(mp4);
   const [mediaType, setMediaType] = useState(MediaType.mp4);
+  const [duration, setDuration] = useState(0);
+  const [progress, setProgress] = useState(0);
   /**
    * @type {React.MutableRefObject<HTMLDivElement>}
    */
@@ -50,6 +52,20 @@ const App = () => {
   const inputChange = useCallback((e) => {
     setUrl(e.target.value);
   }, [setUrl]);
+
+  const progressClick = useCallback((e) => {
+    const player = vjsRef.current;
+    if (!player) {
+      return;
+    }
+
+    const rect = e.target.getBoundingClientRect();
+    const newProgress = (e.clientX - rect.x) / rect.width;
+    player.currentTime(player.duration() * newProgress);
+    if (player.paused()) {
+      player.play();
+    }
+  }, []);
 
   const play = useCallback(async () => {
     if (!vjsRef.current) {
@@ -75,10 +91,12 @@ const App = () => {
         })
       }))
       .then(() => {
+        setDuration(Math.round(vjsRef.current.duration()));
+        setProgress(0);
         console.debug('play')
         vjsRef.current.play();
       });
-  }, [url]);
+  }, [url, setDuration, setProgress]);
 
   const pause = useCallback(() => {
     const player = vjsRef.current;
@@ -107,9 +125,38 @@ const App = () => {
     vjsRef.current = player;
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const player = vjsRef.current;
+      if (!player) {
+        return;
+      }
+
+      setProgress(player.currentTime() / player.duration());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    const player = vjsRef.current;
+    if (!player) {
+      return;
+    }
+
+    const actual = player.currentTime();
+    const expect = progress * duration;
+    console.debug(actual, expect);
+
+  }, [progress, duration]);
+
   return (
     <div className={styles.App}>
-      <div ref={containerRef} className={styles.player}>
+      <div ref={containerRef} className={styles.player}></div>
+      <div className={styles.seek} onClick={progressClick}>
+        <div className={styles.progress} style={{ width: `${progress * 100}%`}}></div>
       </div>
       <div className={styles.url}>
         <input value={url} onChange={inputChange}></input>
